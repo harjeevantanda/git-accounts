@@ -6,7 +6,7 @@
 - Once set simple git commands in each directory with no extra arguments are needed
 - Any Git repository should work ( I have tested on GitHub and GitLab )
 - I am adding examples of two git accounts
-- these commands are executed on Linux
+- these commands are executed on Linux; macOS notes are included where they differ
 
 ## Setup summary
 - [Set up SSH keys for multiple accounts](#step-1-create-ssh-keys)
@@ -56,8 +56,8 @@ ssh-add ~/.ssh/git-office-ssh-file-name
 ### Step 3: Add SSH Keys to Your Git Account
 Print key content on the terminal with the cat command
 ```bash
-cat ~/.ssh/git-personal-ssh-file-name
-cat ~/.ssh/git-office-ssh-file-name
+cat ~/.ssh/git-personal-ssh-file-name.pub
+cat ~/.ssh/git-office-ssh-file-name.pub
 ```
 - Copy the content of the public key file and add it to your respective Git account (GitHub, GitLab, etc.). Refer to [GitHub's documentation](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account) for instructions.
 - Make sure you are adding keys to the correct account
@@ -105,26 +105,26 @@ ssh -T github-account-2
 - Here we are creating two configuration files for each git account
 - Config files for this example
 ```bash
-nano ~/.github-personal-config
+nano ~/.gitconfig-personal
 ```
-content of the `.github-personal-config` file should look like this
+content of the `.gitconfig-personal` file should look like this
 ```bash
 [user]
    name = personal
    email = git-personal-email@gmail.com
 [core]
-   sshCommand = "ssh -i ~/.ssh/git-personal-ssh-file-name"
+   sshCommand = "ssh -i ~/.ssh/git-personal-ssh-file-name -o IdentitiesOnly=yes"
 ```
 ```bash
-nano ~/.github-office-config
+nano ~/.gitconfig-office
 ```
-content of the `.github-office-config` file should look like this
+content of the `.gitconfig-office` file should look like this
 ```bash
 [user]
    name = office
    email = git-office-email@gmail.com
 [core]
-   sshCommand = "ssh -i ~/.ssh/git-office-ssh-file-name"
+   sshCommand = "ssh -i ~/.ssh/git-office-ssh-file-name -o IdentitiesOnly=yes"
 ```
 - The [user] section sets the global Git username and email address.    These settings are used for commits and other Git operations.
 - [core] Sets the SSH command that Git should use when connecting to remote repositories.
@@ -142,36 +142,45 @@ nano ~/.gitconfig
 
 ```bash
 [includeIf "gitdir:~/Desktop/personal-work-directory/"]
-   path = ~/.github-personal-config
+   path = ~/.gitconfig-personal
 
 
 [includeIf "gitdir:~/Desktop/office-work-directory/"]
-   path = ~/.github-office-config
+   path = ~/.gitconfig-office
 ```
 IMPORTANT
 - `Desktop/personal-work-directory/` is the path to the respective repository for each git account
 - The `.gitconfig` file is in the root directory for personal
-- `.github-personal-config` config path for personal
+- `.gitconfig-personal` config path for personal
 
 ### Step 8: Verify configurations and file names
 ```bash
 cat ~/.gitconfig
 cat ~/.ssh/config
-cat ~/.github-personal-config
-cat ~/.github-office-config
+cat ~/.gitconfig-personal
+cat ~/.gitconfig-office
 ls -la ~/.ssh/
 ```
 
+### macOS notes
+- Persist keys across reboots: `ssh-add --apple-use-keychain ~/.ssh/git-personal-ssh-file-name`, and add these lines under each `Host` block in `~/.ssh/config`:
+```bash
+   AddKeysToAgent yes
+   IgnoreUnknown UseKeychain
+   UseKeychain yes
+```
+- `setup-git-accounts.sh` needs bash 4+; macOS ships 3.2. Run `brew install bash` (the script re-execs itself under Homebrew bash automatically).
+
 ### Linux Troubleshoot
 - ERROR: “ssh: Could not resolve hostname github.com: Temporary failure in name resolution”
-   Solution/Command: “sudo systemctl restart systemd-resolved”
+   Solution/Command (Linux): “sudo systemctl restart systemd-resolved”
 - Initial the ssh-agent
    Solution/Command: eval "$(ssh-agent -s)"
 - Test the connection to the host added on the config file
    ssh -T github-account-1
    ssh -T github-account-2
 - Permissions 0644 for `personal-public-key-name` are too open. It is required that your private key files are NOT accessible by others.
-   chmod 600 ~/.ssh/office-public-key-name.pub
+   chmod 600 ~/.ssh/office-private-key-name
 - When creating multiple files it's possible to miss the names and location of the file. Check all file names and content following step 8
 - reload the agent 
 ```bash
